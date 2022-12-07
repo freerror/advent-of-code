@@ -64,16 +64,17 @@ def get_input(day: int, year: int = YEAR):
 
 def main():
     """Create all the individual day folders with a template"""
-    day = 1
-    with open("template") as f:
+    with open("template.txt") as f:
         template = f.read()
-    while day <= 27:
+    for day in range(1, 26):
         day_dir = Path(f"day {day}")
         if day_dir.exists():
             continue
         os.mkdir(day_dir)
-        with open(day_dir) as f:
-            f.write(template.replace("DAY", str(day)))
+        with open(Path.joinpath(day_dir, "code.py"), "w", newline="\n") as f:
+            f.write(
+                template.replace("DAY", str(day)).replace("YEAR", str(YEAR))
+            )
 
 
 if __name__ == "__main__":
