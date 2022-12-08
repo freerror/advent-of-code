@@ -1,7 +1,13 @@
 from dataclasses import dataclass, field
+import sys
+from pathlib import Path
 
-with open("day 7/input") as f:
-    data = f.read()
+sys.path.append(str(Path(__file__).parent.parent))
+import aoc
+
+# Good luck and have fun: https://adventofcode.com/2022
+
+lines = aoc.get_inputs(day=7)[0].splitlines()
 
 # Part 1 - total size of directories who's size is <= 100_000
 # Part 2 -
@@ -33,7 +39,6 @@ def try_as_int(string: str):
         return string
 
 
-lines = data.splitlines()
 cwd = Dir("", 0, None)  # type: ignore
 base = None
 seen_dirs = []

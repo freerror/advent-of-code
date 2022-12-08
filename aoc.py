@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import re
 import sys
 import requests
 
@@ -13,7 +14,7 @@ def get_file_contents(filepath: str | Path):
 
 def make_file(filepath: str | Path, content: str):
     """Write file with contents"""
-    with open(filepath, "w") as f:
+    with open(filepath, "w", newline="\n") as f:
         f.write(content)
 
 
@@ -34,36 +35,65 @@ else:
     SESSION = get_file_contents(SESSION_FILE)
 
 
+def extract_first_example(html: str):
+    # Focus on text after "example" case insensitively
+    html = re.split("example", html, flags=re.IGNORECASE)[1]
+    # Get the first match of the pattern (code block)
+    pattern = re.compile(r"(?:code>)((.|\n)*?)(?:<\/code>)")
+    match = pattern.search(html)
+    if match:
+        return match.groups()[0]
+    return ""
+
+
 def download_input(day: int, year: int):
     """Download input from AOC website"""
-    res = requests.get(
-        f"https://adventofcode.com/{year}/day/{day}/input",
-        cookies={"session": SESSION},
-    )
-    if not res.ok:
-        if res.status_code == 404:
-            raise FileNotFoundError(res.text)
-        raise RuntimeError(
-            f"Request failed: {res.status_code}, content: {res.content}"
+
+    def request_site(url: str):
+        res = requests.get(
+            url,
+            cookies={"session": SESSION},
         )
-    return res.text[:-1]
+        if not res.ok:
+            if res.status_code == 404:
+                raise FileNotFoundError(res.text)
+            raise RuntimeError(
+                f"Request failed: {res.status_code}, content: {res.content}"
+            )
+        return res.text
+
+    input_text = request_site(
+        f"https://adventofcode.com/{year}/day/{day}/input"
+    )[:-1]
+    page_text = request_site(f"https://adventofcode.com/{year}/day/{day}")
+    return page_text, input_text
 
 
-def get_input(day: int, year: int = YEAR):
+def get_inputs(day: int, year: int = YEAR):
     """Get input from file or download from AOC website.
     Returns file contents as a string
     """
-    dest = Path.joinpath(Path(sys.argv[0]).parent, "input")
-    file = Path(dest)
-    if not file.exists():
-        payload = download_input(day, year)
-        with open(file, "w", newline="\n") as f:
-            f.write(payload)
-    return get_file_contents(file)
+    input_dest = Path.joinpath(Path(sys.argv[0]).parent, "input")
+    page_dest = Path.joinpath(Path(sys.argv[0]).parent, "page.html")
+    example_dest = Path.joinpath(Path(sys.argv[0]).parent, "example")
+    page_file = Path(page_dest)
+    input_file = Path(input_dest)
+    example_file = Path(example_dest)
+    if not (
+        input_file.exists() and page_file.exists() and example_dest.exists()
+    ):
+        page_text, input_text = download_input(day, year)
+        example_text = extract_first_example(page_text)
+        make_file(example_file, example_text)
+        make_file(input_file, input_text)
+        make_file(page_file, page_text)
+    example_text = get_file_contents(example_file)
+    input_text = get_file_contents(input_file)
+    return example_text, input_text
 
 
 def main():
-    """Create all the individual day folders with a template"""
+    """Create a new individual day folders with a template"""
     with open("template.txt") as f:
         template = f.read()
     for day in range(1, 26):
@@ -75,6 +105,8 @@ def main():
             f.write(
                 template.replace("DAY", str(day)).replace("YEAR", str(YEAR))
             )
+        # Stop after the first folder.
+        break
 
 
 if __name__ == "__main__":

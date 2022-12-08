@@ -6,5 +6,6 @@ import aoc
 
 # Good luck and have fun: https://adventofcode.com/YEAR
 
-lines = aoc.get_input(day=DAY)
+input = aoc.get_inputs(day=DAY)[0]  # 0 example, 1 puzzle input
+lines = input.splitlines()
 print(lines)
