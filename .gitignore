@@ -5,3 +5,4 @@ input
 page.html
 aoc.py
 __pycache__
+.pytest_cache

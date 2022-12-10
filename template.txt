@@ -1,9 +1,17 @@
 import sys
 from pathlib import Path
 
-from utils import try_int, Vec, lrg
-
 sys.path.append(str(Path(__file__).parent.parent))
+from utils import (
+    try_int,
+    Vec,
+    lrg,
+    find_combinations,
+    find_words_by_length,
+    search_grid,
+    combinations,
+    find_substrings,
+)
 import aoc
 
 # Good luck and have fun: https://adventofcode.com/YEAR
