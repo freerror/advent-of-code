@@ -1,14 +1,12 @@
-from dataclasses import dataclass, field
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
+import utils
 import aoc
 
 # Good luck and have fun: https://adventofcode.com/2022
-
-input = aoc.get_inputs(day=10)[1]  # 0 example, 1 puzzle input
-lines = input.splitlines()
 
 
 @dataclass
@@ -70,12 +68,22 @@ class CRT:
         return output
 
 
-def main():
+def solve_puzzle(input: str):
+    """Main Puzzle Function"""
+    lines = input.splitlines()
+
     crt = CRT()
     crt.parse_instructions(lines)
-    print(crt.check)
-    print(sum(crt.signal_strengths))
-    print(crt.render())
+
+    # print(crt.check)
+
+    part_1_solution = sum(crt.signal_strengths)
+    part_2_solution = crt.render()
+    return part_1_solution, part_2_solution
+
+
+def main():
+    aoc.solve_day(10, solve_puzzle)
 
 
 if __name__ == "__main__":

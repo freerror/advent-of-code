@@ -5,14 +5,14 @@ sys.path.append(str(Path(__file__).parent.parent))
 import utils
 import aoc
 
-# Good luck and have fun: https://adventofcode.com/YEAR
+# Good luck and have fun: https://adventofcode.com/2022
 
 
 def solve_puzzle(input: str):
     """Main Puzzle Function"""
     lines = input.splitlines()
 
-    # WORK HERE
+    # WORK HERE!
 
     part_1_solution = "TBC"
     part_2_solution = "TBC"
@@ -20,9 +20,8 @@ def solve_puzzle(input: str):
 
 
 def main():
-    aoc.solve_day(DAY, solve_puzzle)
+    aoc.solve_day(11, solve_puzzle)
 
 
 if __name__ == "__main__":
     main()
-

@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import re
 import sys
+from typing import Any, Callable
 import requests
 
 
@@ -89,7 +90,19 @@ def get_inputs(day: int, year: int = YEAR):
         make_file(page_file, page_text)
     example_text = get_file_contents(example_file)
     input_text = get_file_contents(input_file)
-    return example_text, input_text
+    return {
+        "Page Example Input": example_text,
+        "Final Puzzle Input": input_text,
+    }
+
+
+def solve_day(day: int, solver_fn: Callable[[str], tuple[Any, Any]]) -> None:
+    """Runs the puzzle solver for example and main input"""
+    for name, input in get_inputs(day=day).items():
+        print(name)
+        result = solver_fn(input)
+        print(f"Part 1 Result: \n{result[0]}")
+        print(f"Part 2 Result: \n{result[1]}\n")
 
 
 def main():
