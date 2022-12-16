@@ -1,3 +1,4 @@
+from html import unescape
 import os
 from pathlib import Path
 import re
@@ -43,7 +44,7 @@ def extract_first_example(html: str):
     pattern = re.compile(r"(?:code>)((.|\n)*?)(?:<\/code>)")
     match = pattern.search(html)
     if match:
-        return match.groups()[0]
+        return unescape(match.groups()[0])
     return ""
 
 
@@ -96,13 +97,16 @@ def get_inputs(day: int, year: int = YEAR):
     }
 
 
-def solve_day(day: int, solver_fn: Callable[[str], tuple[Any, Any]]) -> None:
+def solve_day(
+    day: int, solver_fn: Callable[[str], None | tuple[Any, Any]]
+) -> None:
     """Runs the puzzle solver for example and main input"""
     for name, input in get_inputs(day=day).items():
         print(name)
         result = solver_fn(input)
-        print(f"Part 1 Result: \n{result[0]}")
-        print(f"Part 2 Result: \n{result[1]}\n")
+        if result:
+            print(f"Part 1 Result: \n{result[0]}")
+            print(f"Part 2 Result: \n{result[1]}\n")
 
 
 def main():
