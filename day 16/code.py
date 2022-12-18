@@ -1,8 +1,10 @@
 from collections import deque
 from dataclasses import dataclass, field
 import re
+import functools
 import sys
 from pathlib import Path
+from typing import FrozenSet
 
 
 sys.path.append(str(Path(__file__).parent.parent))
@@ -32,32 +34,8 @@ class Valve:
         return self.name
 
 
-def find_max_pressure(start: Valve, time_limit):
-    queue = [start]
-    on = []
-    elapsed = 0
-    pressure = 0
-
-    while queue and elapsed < time_limit:
-        cur_valve = queue.pop(0)
-        if cur_valve.flow_rate > 0 and cur_valve not in on:
-            on.append(cur_valve)
-            # turning a valve on costs 1
-            elapsed += 1
-        for valve in on:
-            pressure += valve.flow_rate
-
-        options = cur_valve.neighbors
-        n_valve = max([n for n in options if n not in on])
-
-        # getting to a new dest costs 1
-        queue.append(n_valve)
-        elapsed += 1
-    return "Barf"
-
-
 def parse_input(input_str):
-    valves = {}
+    valves: dict[str, Valve] = {}
     for line in input_str.strip().split("\n"):
         match = re.match(
             r"Valve (\w+) has flow rate=(\d+); tunnels? leads? to valves? (.*)",
@@ -69,43 +47,136 @@ def parse_input(input_str):
             neighbors = neighbors_str.split(", ")
             valves[name] = Valve(name, flow_rate, neighbors)
     for v in valves.values():
-        v: Valve
         v.neighbors = [valves[n] for n in v.neighbor_names]
-    return valves["AA"]
+    return valves["AA"], frozenset(valves.values())
 
 
-def search(start: Valve, time_limit=30):
-    time = 0
+@functools.cache
+def calc_pressure(steps):
+    new_pressure = 0
+    on = set()
+    for v in steps:
+        for o in on:
+            new_pressure += o.flow_rate
+        if v[0] not in on and v[1] == 1:
+            on.add(v[0])
+    return new_pressure
+
+
+@functools.cache
+def search(start: Valve, valves: FrozenSet, time_limit=30):
+    """Breadth first search approach (incomplete, doesn't work)"""
+    actions: tuple[Valve, ...]
+    total_valves = len(valves)
     seen = {}
-    curr = start
-    pressure = int(0)
-    horizon = deque([(curr, time, frozenset())])
-    while horizon:
-        curr, time, on = horizon.popleft()
+    # each item in queue contains:
+    # valve, time, pressure, sequence of valves
+    horizon = deque([(start, 0, ())])
 
-        if seen.get((curr, time, on)):
+    while horizon:
+        curr, time, actions = horizon.popleft()
+
+        if seen.get((curr, time, actions)):
             continue
 
-        if time == time_limit:
-            yield curr, time, pressure
+        if time == time_limit and actions:
+            yield actions, calc_pressure(actions)
+            continue
+        if time > time_limit:
+            break
 
-        seen[(curr, time, on)] = True
+        sys.stdout.write(f"\rtime={time} queue={len(horizon)}")
+        sys.stdout.flush()
+
+        # turn on
+        # if flow rate > 0 and not already turned on
+        if curr.flow_rate > 0 and (curr, 1) not in actions:
+            new_action = actions + ((curr, 1),)
+        else:
+            new_action = actions + ((curr, 0),)
 
         # move
         for n in curr.neighbors:
-            horizon.append((n, time + 1, on))  # type: ignore
+            # don't stay or backtrack if there are more valves to be opened
+            last = actions[-1][0] if actions else curr
+            if not (
+                n in (curr, last)
+                and len(set(a for a in actions if a[1] == 1)) < total_valves
+            ):
+                # staying at the current valve is valid
+                next_ = (n, time + 1, new_action)
+                horizon.append(next_)  # type: ignore
 
-        # turn on
-        if curr not in on:
-            horizon.append((curr, time + 1, on | frozenset([curr])))  # type: ignore
+        seen[(curr, time, actions)] = True
+
+
+@functools.cache
+def recurse_search(on: frozenset[Valve], curr: Valve, time_left=30):
+    """Recursive BFS"""
+    if time_left <= 0:
+        return 0
+
+    best = 0
+
+    for valve in curr.neighbors:
+        res_max = recurse_search(on, valve, time_left - 1)
+        best = max(best, res_max)
+
+    if curr not in on and curr.flow_rate > 0 and time_left > 0:
+        turned_on = set(on)
+        turned_on.add(curr)
+        time_left -= 1
+        new_sum = time_left * curr.flow_rate
+
+        for valve in curr.neighbors:
+            res_max = recurse_search(
+                frozenset(turned_on), valve, time_left - 1
+            )
+            new_pressure = new_sum + res_max
+            if new_pressure > best:
+                best = new_pressure
+            best = max(best, new_pressure)
+
+    return best
+
+
+@functools.cache
+def dual_recurse_search(on: frozenset[Valve], curr: Valve, time_left=30):
+    """Recursive search with a friend"""
+
+    if time_left <= 0:
+        # Searcher B
+        return recurse_search(on, curr, 26)
+
+    best = 0
+    for valve in curr.neighbors:
+        res_max = dual_recurse_search(on, valve, time_left - 1)
+        best = max(best, res_max)
+
+    if curr not in on and curr.flow_rate > 0 and time_left > 0:
+        turned_on = set(on)
+        turned_on.add(curr)
+        time_left -= 1
+        new_sum = time_left * curr.flow_rate
+
+        for valve in curr.neighbors:
+            res_max = dual_recurse_search(
+                frozenset(turned_on), valve, time_left - 1
+            )
+            new_pressure = new_sum + res_max
+            best = max(best, new_pressure)
+
+    return best
 
 
 def solve_puzzle(input: str):
     """Main Puzzle Function"""
-    start = parse_input(input)
+    start, _ = parse_input(input)
 
-    for x in search(start):
-        print(x)
+    return (
+        recurse_search(frozenset(), start),
+        dual_recurse_search(frozenset(), start, time_left=26),
+    )
 
 
 def main():
