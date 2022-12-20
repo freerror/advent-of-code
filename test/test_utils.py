@@ -1,8 +1,37 @@
+from enum import Enum
 import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 from utils import Vec
+
+
+class Bot(Enum):
+    ORE = 0
+    CLAY = 1
+    OBSIDIAN = 2
+    GEODE = 3
+
+
+def test_bot():
+    ore = Bot.ORE
+    print(int(ore.value))
+
+
+# Misc
+def test_for_else():
+    for i in range(3):
+        if i == 2:
+            break
+    else:
+        print("I don't print")
+        assert False
+    for i in range(3):
+        if i == 3:
+            break
+    else:
+        print("I do print")
+        assert True
 
 
 def test_init():

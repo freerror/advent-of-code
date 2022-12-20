@@ -2,6 +2,7 @@
   "editor.tabSize": 4,
   "python.analysis.typeCheckingMode": "basic",
   "python.testing.pytestArgs": [
+    "-rP",
     "."
   ],
   "python.testing.unittestEnabled": false,
